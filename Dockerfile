@@ -28,6 +28,9 @@ RUN groupadd -r $ASTERISKUSER && useradd -r -g $ASTERISKUSER $ASTERISKUSER \
 	  mpg123 \
 	  libwww-perl\
 	  wget\
+	  unzip\
+	  automake\
+	  autoconf\
 	  && rm -rf /var/lib/apt/lists/*
 
 
@@ -42,11 +45,9 @@ RUN make install
 RUN ldconfig
 
 
+# pj project
 WORKDIR /tmp
-# Get pj project
 RUN git clone -b pjproject-2.4.5 --depth 1 https://github.com/asterisk/pjproject.git
-
-# Build pj project
 WORKDIR /tmp/pjproject
 RUN ./configure
 RUN make dep
@@ -55,30 +56,21 @@ RUN make install
 RUN ldconfig
 
 
-# get asterisk
+# asterisk
 WORKDIR /tmp
-RUN git clone -b certified/13.8 --depth 1 https://gerrit.asterisk.org/asterisk
-
-#installation asterisk
+RUN git clone -b 13.9 --depth 1 https://gerrit.asterisk.org/asterisk
 WORKDIR /tmp/asterisk
 RUN  ./configure
 RUN  cd menuselect && make menuselect && cd .. & make menuselect-tree
 RUN  menuselect/menuselect --disable BUILD_NATIVE \
   --enable streamplayer \
-  --enable chan_alsa \
-  --enable chan_console\
-  --enable chan_sip\
-  --enable res_snmp\
-  --enable res_http_websocket\
-  --enable res_hep_pjsip\
-  --enable res_hep_rtcp\
   menuselect/menuselect.makeopts
 
 RUN  make && make install && make config && make samples
 
 
+# Additional files
 WORKDIR /tmp
-# Install files for asterisk
 RUN  wget http://sourceforge.net/projects/phpagi/files/latest/download \
 	&& tar xvzf download \
 	&& mv phpagi-2.20/* /var/lib/asterisk/agi-bin/  \
@@ -86,8 +78,8 @@ RUN  wget http://sourceforge.net/projects/phpagi/files/latest/download \
 	&& rm -f download
 
 
+# chan_dongle
 WORKDIR /tmp
-RUN apt-get update && apt-get  install -y unzip  automake autoconf 
 RUN git clone -b asterisk13 https://github.com/oleg-krv/asterisk-chan-dongle.git
 WORKDIR /tmp/asterisk-chan-dongle
 RUN aclocal&&autoconf&&automake -a ||true
@@ -95,7 +87,4 @@ RUN ./configure
 RUN make install
 
 WORKDIR /
-#Copy minimum configuration files so that it can start
-#COPY etc/* /etc/asterisk/
-#Start Asterisk in foreground
 CMD ["asterisk","-vvvvvvvvf"]
