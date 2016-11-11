@@ -31,39 +31,46 @@ RUN groupadd -r $ASTERISKUSER && useradd -r -g $ASTERISKUSER $ASTERISKUSER \
 	  unzip\
 	  automake\
 	  autoconf\
+	  vorbis-tools\
+	  libvorbis-dev\
+	  libsrtp0-dev\
+	  linsrtp0\
+	  libspeex-dev\
+	  libspeex1\
 	  && rm -rf /var/lib/apt/lists/*
 
 
 # install port audio
 
-WORKDIR /tmp
-RUN git clone  https://git.assembla.com/portaudio.git
-WORKDIR /tmp/portaudio
-RUN ./configure
-RUN make
-RUN make install
-RUN ldconfig
+#WORKDIR /tmp
+#RUN git clone  https://git.assembla.com/portaudio.git
+#WORKDIR /tmp/portaudio
+#RUN ./configure
+#RUN make
+#RUN make install
+#RUN ldconfig
 
 
-# pj project
-WORKDIR /tmp
-RUN git clone -b pjproject-2.4.5 --depth 1 https://github.com/asterisk/pjproject.git
-WORKDIR /tmp/pjproject
-RUN ./configure
-RUN make dep
-RUN make
-RUN make install
-RUN ldconfig
+## pj project
+#WORKDIR /tmp
+#RUN git clone -b pjproject-2.4.5 --depth 1 https://github.com/asterisk/pjproject.git
+#WORKDIR /tmp/pjproject
+#RUN ./configure
+#RUN make dep
+#RUN make
+#RUN make install
+#RUN ldconfig
 
 
 # asterisk
 WORKDIR /tmp
 RUN git clone -b 13.9 --depth 1 https://gerrit.asterisk.org/asterisk
 WORKDIR /tmp/asterisk
-RUN  ./configure
+RUN  ./configure --with-pjproject-bundled
 RUN  cd menuselect && make menuselect && cd .. & make menuselect-tree
 RUN  menuselect/menuselect --disable BUILD_NATIVE \
   --enable streamplayer \
+  --enable format_mp3\
   menuselect/menuselect.makeopts
 
 RUN  make && make install && make config && make samples
